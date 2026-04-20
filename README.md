@@ -209,6 +209,15 @@ Tables:
 - The simulator must only be used on local demo files you control.
 - Do not point the protected folder to important personal or system directories.
 
+## Security Considerations
+
+Several defensive security decisions were made in the implementation:
+
+- **Thread safety** — the watchdog file monitor runs in a background thread while Flask serves requests in another. A `threading.Lock` is used in both `DetectionEngine` and `RansomEyeLab` to ensure shared state is never read mid-update.
+- **SQL injection prevention** — `update_incident` only allows a fixed whitelist of column names (`status`, `action_taken`, `evidence_path`, `recovery_status`). Any unexpected column name is rejected before it reaches the SQL query.
+- **Backup integrity guard** — refreshing the backup is blocked when the system is in `ALERT` or `RECOVERY` state. This prevents accidentally overwriting the clean backup with compromised files during or after a simulated attack.
+- **Secret key** — the Flask `SECRET_KEY` is read from an environment variable if available, otherwise a cryptographically random key is generated at startup using `secrets.token_hex`.
+
 ## Limitations
 
 - Process attribution is approximate, not exact per-file ownership.
