@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Overview{% endblock %}
+{% block page_title %}Ransomware Early-Warning and Recovery Overview{% endblock %}
+
+{% block content %}
+<section class="hero-grid">
+    <article class="card hero-card">
+        <span class="eyebrow">Ethical Defensive Demo</span>
+        <h2>Monitor a protected folder, explain suspicious behavior, and recover safely.</h2>
+        <p>
+            This university project simulates a mini ransomware defense platform. It watches one folder in real time,
+            scores ransomware-like behavior, logs forensic evidence, triggers recovery for high-risk incidents, and keeps
+            everything inside a controlled educational lab.
+        </p>
+        <div class="action-row">
+            <a class="button primary" href="{{ url_for('monitor') }}">Open Live Monitor</a>
+            <a class="button secondary" href="{{ url_for('simulator') }}">Run Simulator</a>
+        </div>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Protected Folder</span>
+        <h3 class="path-box">{{ summary.protected_folder }}</h3>
+        <p>{{ summary.status_detail }}</p>
+        <ul class="reason-list">
+            {% for reason in summary.explanations %}
+                <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+    </article>
+</section>
+
+<section class="stats-grid">
+    <article class="metric-card">
+        <span>Total events</span>
+        <strong id="metric-events">{{ summary.total_events }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Suspicious events</span>
+        <strong id="metric-suspicious">{{ summary.suspicious_events }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Total incidents</span>
+        <strong>{{ summary.total_incidents }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Current risk score</span>
+        <strong id="metric-risk">{{ summary.current_risk_score }}/100</strong>
+    </article>
+    <article class="metric-card">
+        <span>Backup snapshot files</span>
+        <strong>{{ summary.backup_manifest_count }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Simulator state</span>
+        <strong>{{ "ACTIVE" if summary.simulator_active else "IDLE" }}</strong>
+    </article>
+</section>
+
+<section class="two-column">
+    <article class="card">
+        <div class="section-header">
+            <div>
+                <span class="eyebrow">Event Mix</span>
+                <h2>Live activity distribution</h2>
+            </div>
+        </div>
+        <div class="bar-list">
+            {% for event_type, count in summary.event_type_counts.items() %}
+                <div class="bar-row">
+                    <label>{{ event_type }}</label>
+                    <div class="bar-track"><span style="width: {{ (count * 8) if count * 8 < 100 else 100 }}%"></span></div>
+                    <strong>{{ count }}</strong>
+                </div>
+            {% else %}
+                <p>No events recorded yet.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Recent affected files</span>
+        <h2>Current alert context</h2>
+        <div class="timeline">
+            {% for item in summary.recent_files %}
+                <div class="timeline-item">{{ item }}</div>
+            {% else %}
+                <div class="timeline-item">No suspicious file burst detected yet.</div>
+            {% endfor %}
+        </div>
+        {% if summary.last_alert %}
+            <div class="callout">
+                <strong>Last alert:</strong>
+                <p>{{ summary.last_alert["title"] }} ({{ summary.last_alert["severity"] }}) at {{ summary.last_alert["created_at"] }}</p>
+            </div>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

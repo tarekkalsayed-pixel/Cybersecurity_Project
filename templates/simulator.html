@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Simulator{% endblock %}
+{% block page_title %}Safe Simulator Control{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <article class="card">
+        <span class="eyebrow">Safe Demo Only</span>
+        <h2>Trigger educational ransomware-like behavior</h2>
+        <p>
+            These scenarios act only inside the configured protected folder. They rename demo files,
+            overwrite them with randomized content, and create rapid event bursts to exercise the detector.
+        </p>
+        <p><strong>Simulator state:</strong> {{ summary.simulator_last_message }}</p>
+        <div class="sim-grid">
+            <form method="post" action="{{ url_for('run_simulator') }}">
+                <input type="hidden" name="scenario" value="rename_storm">
+                <button class="button primary" type="submit">Run Rename Storm</button>
+            </form>
+            <form method="post" action="{{ url_for('run_simulator') }}">
+                <input type="hidden" name="scenario" value="entropy_burst">
+                <button class="button primary" type="submit">Run Entropy Burst</button>
+            </form>
+            <form method="post" action="{{ url_for('run_simulator') }}">
+                <input type="hidden" name="scenario" value="mixed_attack">
+                <button class="button primary" type="submit">Run Mixed Attack</button>
+            </form>
+            <form method="post" action="{{ url_for('seed_demo') }}">
+                <button class="button secondary" type="submit">Reseed Demo Files</button>
+            </form>
+        </div>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Demo Notes</span>
+        <h2>How to present it</h2>
+        <ul class="reason-list">
+            <li>Start the monitor and show the protected folder path.</li>
+            <li>Run a simulator scenario to generate rename and modification bursts.</li>
+            <li>Watch the risk score rise and the alert explanation update.</li>
+            <li>Show the incident report and recovery page after a high-risk alert.</li>
+            <li>Explain that process correlation is a safe approximation, not kernel-level attribution.</li>
+        </ul>
+    </article>
+</section>
+{% endblock %}

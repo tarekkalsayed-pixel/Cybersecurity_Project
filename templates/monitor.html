@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Live Monitor{% endblock %}
+{% block page_title %}Live Monitor Status{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="section-header">
+        <div>
+            <span class="eyebrow">Watcher Control</span>
+            <h2>Protected folder telemetry</h2>
+        </div>
+        <div class="action-row">
+            <form method="post" action="{{ url_for('start_monitor') }}">
+                <button class="button primary" type="submit">Start Monitoring</button>
+            </form>
+            <form method="post" action="{{ url_for('stop_monitor') }}">
+                <button class="button secondary" type="submit">Pause Monitoring</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="stats-grid compact">
+        <article class="metric-card">
+            <span>Status</span>
+            <strong id="monitor-state">{{ summary.status }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Current severity</span>
+            <strong>{{ summary.current_severity }}</strong>
+        </article>
+        <article class="metric-card">
+            <span>Risk score</span>
+            <strong>{{ summary.current_risk_score }}/100</strong>
+        </article>
+        <article class="metric-card">
+            <span>Watching</span>
+            <strong>{{ "YES" if summary.monitor_running else "NO" }}</strong>
+        </article>
+    </div>
+    <p class="subtle">{{ summary.status_detail }}</p>
+    <p class="subtle">Protected path: {{ summary.protected_folder }}</p>
+</section>
+
+<section class="two-column">
+    <article class="card">
+        <span class="eyebrow">Explainable Alert Logic</span>
+        <h2>Why the engine is suspicious</h2>
+        <ul class="reason-list">
+            {% for reason in summary.explanations %}
+                <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Live Process Snapshot</span>
+        <h2>Top visible processes</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Process</th>
+                    <th>PID</th>
+                    <th>CPU</th>
+                    <th>Memory MB</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for process in summary.process_snapshot %}
+                    <tr>
+                        <td>{{ process.name }}</td>
+                        <td>{{ process.pid }}</td>
+                        <td>{{ process.cpu }}</td>
+                        <td>{{ process.memory_mb }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4">No process data available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+
+<section class="card">
+    <span class="eyebrow">Recent Telemetry</span>
+    <h2>Latest file events</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>File</th>
+                <th>Process</th>
+                <th>Risk</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in recent_events %}
+                <tr>
+                    <td>{{ event.timestamp }}</td>
+                    <td>{{ event.event_type }}</td>
+                    <td>{{ event.file_path }}</td>
+                    <td>{{ event.process_name or "Unknown" }}</td>
+                    <td><span class="badge badge-{{ event.severity|lower }}">{{ event.severity }}</span></td>
+                    <td>{{ event.alert_reason or "-" }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No file events logged yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

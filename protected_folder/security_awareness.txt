@@ -1,0 +1,2 @@
+Never pay ransom in a classroom demo.
+Always restore from clean backup copies instead.

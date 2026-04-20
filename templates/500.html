@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Error{% endblock %}
+{% block page_title %}Unexpected application error{% endblock %}
+
+{% block content %}
+<section class="card">
+    <span class="eyebrow">500</span>
+    <h2>The lab hit an unexpected error.</h2>
+    <p>Please refresh the page or restart the Flask app.</p>
+    <a class="button primary" href="{{ url_for('index') }}">Back to Overview</a>
+</section>
+{% endblock %}

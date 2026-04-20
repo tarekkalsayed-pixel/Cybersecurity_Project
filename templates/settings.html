@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Settings{% endblock %}
+{% block page_title %}Lab Settings and Limitations{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <article class="card">
+        <span class="eyebrow">Configured Paths</span>
+        <h2>Runtime folders</h2>
+        <div class="manifest-list">
+            <div class="manifest-item"><strong>Protected folder</strong><small>{{ summary.protected_folder }}</small></div>
+            <div class="manifest-item"><strong>Backup folder</strong><small>{{ summary.backup_folder }}</small></div>
+            <div class="manifest-item"><strong>Monitor running</strong><small>{{ "Yes" if summary.monitor_running else "No" }}</small></div>
+        </div>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Safety Rules</span>
+        <h2>Ethical constraints</h2>
+        <ul class="reason-list">
+            <li>The simulator only works inside the protected demo folder.</li>
+            <li>No malware, persistence, or harmful encryption logic is implemented.</li>
+            <li>High-risk alerts trigger clean backup restoration for educational recovery demos.</li>
+            <li>Process attribution is approximate and intentionally documented honestly.</li>
+        </ul>
+    </article>
+</section>
+{% endblock %}

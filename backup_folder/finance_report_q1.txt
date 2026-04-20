@@ -1,0 +1,4 @@
+Quarterly finance summary
+Revenue projection: 125000
+Expenses projection: 83000
+Notes: This is a harmless sample file for the RansomEye lab.
