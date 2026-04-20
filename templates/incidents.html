@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Incidents{% endblock %}
+{% block page_title %}Incident Cases{% endblock %}
+
+{% block content %}
+<section class="card">
+    <span class="eyebrow">Alert Cases</span>
+    <h2>High-risk detections and recovery reports</h2>
+
+    <div class="timeline">
+        {% for incident in incidents %}
+            <article class="timeline-card">
+                <div class="section-header">
+                    <div>
+                        <strong>#{{ incident.id }} {{ incident.title }}</strong>
+                        <p>{{ incident.created_at }}</p>
+                    </div>
+                    <span class="badge badge-{{ incident.severity|lower }}">{{ incident.severity }} / {{ incident.risk_score }}</span>
+                </div>
+                <p class="preline">{{ incident.reasons }}</p>
+                <p><strong>Status:</strong> {{ incident.status }}</p>
+                <p><strong>Recovery:</strong> {{ incident.recovery_status or "Pending" }}</p>
+                <div class="action-row">
+                    <a class="button secondary" href="{{ url_for('download_incident', incident_id=incident.id) }}">Download JSON</a>
+                    <a class="button secondary" href="{{ url_for('download_incident', incident_id=incident.id, format='txt') }}">Download TXT</a>
+                </div>
+            </article>
+        {% else %}
+            <article class="timeline-card">No incidents recorded yet. Use the simulator to generate a safe demo case.</article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

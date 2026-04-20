@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Recovery{% endblock %}
+{% block page_title %}Backup and Recovery Workflow{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <article class="card">
+        <div class="section-header">
+            <div>
+                <span class="eyebrow">Clean Snapshot</span>
+                <h2>Backup set</h2>
+            </div>
+            <div class="action-row">
+                <form method="post" action="{{ url_for('refresh_backups') }}">
+                    <button class="button primary" type="submit">Refresh Backups</button>
+                </form>
+                <form method="post" action="{{ url_for('restore_all') }}">
+                    <button class="button secondary" type="submit">Restore All Files</button>
+                </form>
+            </div>
+        </div>
+        <p><strong>Protected root:</strong> {{ backup_status.protected_root }}</p>
+        <p><strong>Backup root:</strong> {{ backup_status.backup_root }}</p>
+        <p><strong>Backed up files:</strong> {{ backup_status.file_count }}</p>
+        <div class="manifest-list">
+            {% for item in backup_status.manifest[:10] %}
+                <div class="manifest-item">
+                    <strong>{{ item.relative_path }}</strong>
+                    <small>{{ item.size }} bytes</small>
+                </div>
+            {% else %}
+                <p>No backup files available yet.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="card">
+        <span class="eyebrow">Latest Recovery</span>
+        <h2>System recovery state</h2>
+        {% if summary.last_recovery %}
+            <p><strong>Status:</strong> {{ summary.last_recovery.recovery_status }}</p>
+            <p><strong>Evidence:</strong> {{ summary.last_recovery.evidence_path }}</p>
+            <p><strong>Files restored:</strong> {{ summary.last_recovery.restore_result.restored_count }}</p>
+        {% else %}
+            <p>No automated recovery has been triggered yet.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="card">
+    <span class="eyebrow">Recovery Timeline</span>
+    <h2>Operator and automatic recovery actions</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in recovery_history %}
+                <tr>
+                    <td>{{ item.timestamp }}</td>
+                    <td>{{ item.action }}</td>
+                    <td>{{ item.status }}</td>
+                    <td>{{ item.details }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4">No recovery actions logged yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

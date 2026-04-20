@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RansomEye Lab{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body data-status="{{ summary.status if summary else 'WATCHING' }}">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="{{ url_for('index') }}">
+                <span class="brand-mark">RE</span>
+                <span>
+                    <strong>RansomEye</strong>
+                    <small>Ethical Recovery Lab</small>
+                </span>
+            </a>
+
+            <nav class="nav">
+                <a href="{{ url_for('index') }}">Overview</a>
+                <a href="{{ url_for('monitor') }}">Live Monitor</a>
+                <a href="{{ url_for('events') }}">Events Log</a>
+                <a href="{{ url_for('incidents') }}">Incidents</a>
+                <a href="{{ url_for('recovery') }}">Backups & Recovery</a>
+                <a href="{{ url_for('simulator') }}">Simulator Control</a>
+                <a href="{{ url_for('settings') }}">Settings</a>
+            </nav>
+
+            <div class="sidebar-card">
+                <span class="eyebrow">Current State</span>
+                <strong id="status-label">{{ summary.status if summary else "WATCHING" }}</strong>
+                <p id="status-detail">{{ summary.status_detail if summary else "Loading status..." }}</p>
+            </div>
+        </aside>
+
+        <div class="main-panel">
+            <header class="topbar">
+                <div>
+                    <span class="eyebrow">CryptoTrap / RansomEye</span>
+                    <h1>{% block page_title %}Ransomware Early-Warning and Recovery Lab{% endblock %}</h1>
+                </div>
+                <div class="banner banner-{{ (summary.status if summary else 'WATCHING')|lower }}">
+                    {{ summary.status if summary else "WATCHING" }}
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <section class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
+            {% endwith %}
+
+            <main class="content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

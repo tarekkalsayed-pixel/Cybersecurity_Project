@@ -1,0 +1,4 @@
+hostname,role
+lab-node-1,web
+lab-node-2,database
+lab-node-3,backup

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}RansomEye | Events{% endblock %}
+{% block page_title %}Events Log{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="section-header">
+        <div>
+            <span class="eyebrow">SQLite Event Store</span>
+            <h2>Forensic event timeline</h2>
+        </div>
+        <form method="post" action="{{ url_for('clear_logs') }}">
+            <button class="button secondary" type="submit">Clear Logs</button>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Path</th>
+                <th>Process</th>
+                <th>Entropy</th>
+                <th>Risk</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+                <tr>
+                    <td>{{ event.id }}</td>
+                    <td>{{ event.timestamp }}</td>
+                    <td>{{ event.event_type }}</td>
+                    <td>{{ event.file_path }}</td>
+                    <td>{{ event.process_name or "Unknown" }} {% if event.pid %}(PID {{ event.pid }}){% endif %}</td>
+                    <td>{{ event.entropy_before if event.entropy_before is not none else "-" }} -> {{ event.entropy_after if event.entropy_after is not none else "-" }}</td>
+                    <td><span class="badge badge-{{ event.severity|lower }}">{{ event.risk_score }}</span></td>
+                    <td>{{ event.action_taken or "-" }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8">No events captured yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
