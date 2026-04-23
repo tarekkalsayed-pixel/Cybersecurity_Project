@@ -1,3 +1,10 @@
+// Mark the nav link that matches the current page as active
+document.querySelectorAll(".nav a").forEach(link => {
+    if (link.pathname === window.location.pathname) {
+        link.classList.add("active");
+    }
+});
+
 async function refreshSummary() {
     const response = await fetch("/api/summary");
     if (!response.ok) {
