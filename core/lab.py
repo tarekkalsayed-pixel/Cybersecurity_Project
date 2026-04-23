@@ -48,10 +48,12 @@ class RansomEyeLab:
         self.status = "WATCHING"
         self.status_detail = "Ready to monitor the protected folder."
         self.last_recovery = None
+        self._backup_manifest_count = 0
 
     def initialize(self) -> None:
         self.simulator.seed_demo_files()
-        self.backup_manager.refresh_backups()
+        result = self.backup_manager.refresh_backups()
+        self._backup_manifest_count = result["file_count"]
         self.start_monitoring()
 
     def start_monitoring(self) -> str:
@@ -188,7 +190,7 @@ class RansomEyeLab:
             "simulator_last_message": self.simulator.last_message,
             "last_recovery": last_recovery,
             "process_snapshot": self.process_tracker.process_snapshot(),
-            "backup_manifest_count": len(self.backup_manager.manifest()),
+            "backup_manifest_count": self._backup_manifest_count,
         }
 
     def recent_events(self, limit: int = 100):
@@ -244,6 +246,7 @@ class RansomEyeLab:
                 "Wait until the status returns to WATCHING so you don't overwrite the clean backup."
             )
         result = self.backup_manager.refresh_backups()
+        self._backup_manifest_count = result["file_count"]
         self.logger.log_recovery_action(
             None,
             "refresh_backups",
@@ -256,7 +259,8 @@ class RansomEyeLab:
         self.monitor.suspend_callbacks()
         try:
             result = self.simulator.seed_demo_files()
-            self.backup_manager.refresh_backups()
+            backup_result = self.backup_manager.refresh_backups()
+            self._backup_manifest_count = backup_result["file_count"]
         finally:
             self.monitor.resume_callbacks()
         return result

@@ -43,3 +43,7 @@ CREATE TABLE IF NOT EXISTS recovery_log (
     status TEXT NOT NULL,
     details TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_events_risk_score ON events(risk_score);
+CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);

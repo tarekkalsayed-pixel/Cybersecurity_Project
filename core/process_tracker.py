@@ -3,6 +3,7 @@ import threading
 from collections import deque
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+from typing import Optional
 
 import psutil
 
@@ -20,6 +21,9 @@ class ProcessTracker:
     def __init__(self) -> None:
         self._recent_context = deque(maxlen=128)
         self._lock = threading.Lock()
+        self._snapshot_cache: Optional[list] = None
+        self._snapshot_cached_at: Optional[datetime] = None
+        self._snapshot_ttl = timedelta(seconds=5)
 
     def register_context(self, process_name: str, pid: int, description: str) -> None:
         with self._lock:
@@ -53,6 +57,13 @@ class ProcessTracker:
         return None
 
     def process_snapshot(self, limit: int = 8) -> list[dict]:
+        # Iterating all OS processes is expensive on Windows, so we cache the
+        # result for 5 seconds instead of recomputing on every request.
+        now = datetime.utcnow()
+        if self._snapshot_cache is not None and self._snapshot_cached_at is not None:
+            if now - self._snapshot_cached_at < self._snapshot_ttl:
+                return self._snapshot_cache
+
         rows = []
         for process in psutil.process_iter(["pid", "name", "cpu_percent", "memory_info"]):
             try:
@@ -70,4 +81,6 @@ class ProcessTracker:
                 continue
 
         rows.sort(key=lambda item: (item["cpu"], item["memory_mb"]), reverse=True)
-        return rows[:limit]
+        self._snapshot_cache = rows[:limit]
+        self._snapshot_cached_at = now
+        return self._snapshot_cache
