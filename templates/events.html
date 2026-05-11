@@ -28,7 +28,7 @@
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="events-rows">
             {% for event in events %}
                 <tr>
                     <td>{{ event.id }}</td>
@@ -45,5 +45,6 @@
             {% endfor %}
         </tbody>
     </table>
+    <div class="pagination" id="events-pagination"></div>
 </section>
 {% endblock %}

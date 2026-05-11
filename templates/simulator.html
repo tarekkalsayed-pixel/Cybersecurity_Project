@@ -8,10 +8,6 @@
     <article class="card">
         <span class="eyebrow">Safe Demo Only</span>
         <h2>Trigger educational ransomware-like behavior</h2>
-        <p>
-            These scenarios act only inside the configured protected folder. They rename demo files,
-            overwrite them with randomized content, and create rapid event bursts to exercise the detector.
-        </p>
         <p><strong>Simulator state:</strong> {{ summary.simulator_last_message }}</p>
         <div class="sim-grid">
             <form method="post" action="{{ url_for('run_simulator') }}">

@@ -8,7 +8,7 @@
     <span class="eyebrow">Alert Cases</span>
     <h2>High-risk detections and recovery reports</h2>
 
-    <div class="timeline">
+    <div class="timeline" id="incidents-list">
         {% for incident in incidents %}
             <article class="timeline-card">
                 <div class="section-header">
@@ -30,5 +30,6 @@
             <article class="timeline-card">No incidents recorded yet. Use the simulator to generate a safe demo case.</article>
         {% endfor %}
     </div>
+    <div class="pagination" id="incidents-pagination"></div>
 </section>
 {% endblock %}
