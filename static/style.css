@@ -260,6 +260,10 @@ th,
     padding-left: 18px;
 }
 
+.timeline-item{
+    margin-left: -18px;
+}
+
 .timeline-card,
 .timeline-item,
 .manifest-item,
@@ -272,6 +276,7 @@ th,
 }
 
 .bar-list {
+    margin-top: 20px;
     display: grid;
     gap: 14px;
 }
