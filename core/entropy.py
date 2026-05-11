@@ -1,5 +1,5 @@
 import hashlib
-import math
+from math import log2
 from collections import Counter
 from pathlib import Path
 
@@ -14,7 +14,7 @@ def calculate_entropy(data: bytes) -> float:
 
     for count in counts.values():
         probability = count / length
-        entropy -= probability * math.log2(probability)
+        entropy -= probability * log2(probability)
 
     return round(entropy, 3)
 
