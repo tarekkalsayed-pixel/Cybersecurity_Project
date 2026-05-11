@@ -7,3 +7,4 @@ instance/
 uploads/
 .pytest_cache/
 .vscode/
+.idea/
