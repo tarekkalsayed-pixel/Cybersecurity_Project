@@ -1,6 +1,6 @@
-# CryptoTrap / RansomEye
+# RansomEye
 
-CryptoTrap / RansomEye is a safe university-level cybersecurity project that demonstrates ransomware early-warning, explainable alerting, forensic logging, backup recovery, and controlled simulation inside a protected demo folder.
+RansomEye is a safe university-level cybersecurity project that demonstrates ransomware early-warning, explainable alerting, forensic logging, backup recovery, and controlled simulation inside a protected demo folder.
 
 This project is **defensive and educational only**. It does **not** contain real ransomware, destructive malware, persistence, privilege escalation, or harmful encryption logic.
 
