@@ -53,9 +53,7 @@ class RansomEyeLab:
         self._backup_manifest_count = result["file_count"]
         self.start_monitoring()
 
-    # ------------------------------------------------------------------ #
-    # Monitor control                                                      #
-    # ------------------------------------------------------------------ #
+    # Monitor control
 
     def start_monitoring(self) -> str:
         self.monitor.start()
@@ -69,9 +67,7 @@ class RansomEyeLab:
         self.status_detail = "Monitoring paused by operator."
         return self.status_detail
 
-    # ------------------------------------------------------------------ #
-    # Event handling (called from the watchdog background thread)         #
-    # ------------------------------------------------------------------ #
+    # Event handling (called from the watchdog background thread)
 
     def handle_event(self, event: dict) -> None:
         """
@@ -185,9 +181,7 @@ class RansomEyeLab:
         event["incident_id"]  = incident_id
         self.logger.log_event(event)
 
-    # ------------------------------------------------------------------ #
-    # Dashboard data                                                       #
-    # ------------------------------------------------------------------ #
+    # Dashboard data
 
     def dashboard_summary(self) -> dict:
         stats = self.logger.stats()
@@ -246,9 +240,7 @@ class RansomEyeLab:
             "file_count":    len(manifest),
         }
 
-    # ------------------------------------------------------------------ #
-    # Operator actions                                                     #
-    # ------------------------------------------------------------------ #
+    # Operator actions
 
     def manual_restore(self) -> dict:
         self.status = "RECOVERY"
