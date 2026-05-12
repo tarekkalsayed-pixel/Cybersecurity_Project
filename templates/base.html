@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body data-status="{{ summary.status if summary else 'WATCHING' }}">
+<div id="progress-bar"></div>
     <div class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="{{ url_for('index') }}">

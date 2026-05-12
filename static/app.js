@@ -1,14 +1,33 @@
+// ── Progress bar on page navigation ──
+(function () {
+    const bar = document.getElementById("progress-bar");
+    if (!bar) return;
+    let width = 0;
+    const grow = setInterval(() => {
+        width = width < 85 ? width + (85 - width) * 0.12 : width;
+        bar.style.width = width + "%";
+    }, 80);
+    window.addEventListener("load", () => {
+        clearInterval(grow);
+        bar.style.width = "100%";
+        setTimeout(() => { bar.style.opacity = "0"; }, 300);
+    });
+    document.querySelectorAll("a[href]").forEach(link => {
+        link.addEventListener("click", () => {
+            bar.style.opacity = "1";
+            bar.style.width = "30%";
+        });
+    });
+})();
+
 // Simple pagination for any list of elements.
-// containerId: the element whose direct children are the rows/cards to paginate.
-// controlsId: where to render the prev/next controls.
-// pageSize: how many items to show per page.
 function paginate(containerId, controlsId, pageSize) {
     const container = document.getElementById(containerId);
     const controls  = document.getElementById(controlsId);
     if (!container || !controls) return;
 
     const items = Array.from(container.children);
-    if (items.length <= pageSize) return; // no need to paginate
+    if (items.length <= pageSize) return;
 
     let page = 0;
     const totalPages = Math.ceil(items.length / pageSize);
@@ -37,34 +56,41 @@ document.querySelectorAll(".nav a").forEach(link => {
     }
 });
 
+const METRIC_IDS = ["metric-events", "metric-suspicious", "metric-risk", "status-label", "status-detail", "monitor-state"];
+
 async function refreshSummary() {
+    // Pulse metrics while fetching
+    METRIC_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("refreshing");
+    });
+
     const response = await fetch("/api/summary");
-    if (!response.ok) {
-        return;
-    }
+    if (!response.ok) return;
 
     const summary = await response.json();
-    const statusLabel = document.getElementById("status-label");
-    const statusDetail = document.getElementById("status-detail");
-    const metricEvents = document.getElementById("metric-events");
-    const metricSuspicious = document.getElementById("metric-suspicious");
-    const metricRisk = document.getElementById("metric-risk");
-    const monitorState = document.getElementById("monitor-state");
 
     document.body.dataset.status = summary.status;
 
-    if (statusLabel) statusLabel.textContent = summary.status;
-    if (statusDetail) statusDetail.textContent = summary.status_detail;
-    if (metricEvents) metricEvents.textContent = summary.total_events;
-    if (metricSuspicious) metricSuspicious.textContent = summary.suspicious_events;
-    if (metricRisk) metricRisk.textContent = `${summary.current_risk_score}/100`;
-    if (monitorState) monitorState.textContent = summary.status;
+    const updates = {
+        "status-label":     summary.status,
+        "status-detail":    summary.status_detail,
+        "metric-events":    summary.total_events,
+        "metric-suspicious":summary.suspicious_events,
+        "metric-risk":      `${summary.current_risk_score}/100`,
+        "monitor-state":    summary.status,
+    };
+
+    Object.entries(updates).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+            el.classList.remove("refreshing");
+        }
+    });
 }
 
-setInterval(() => {
-    refreshSummary().catch(() => {});
-}, 4000);
-
+setInterval(() => { refreshSummary().catch(() => {}); }, 4000);
 refreshSummary().catch(() => {});
 
 paginate("events-rows",    "events-pagination",    25);
