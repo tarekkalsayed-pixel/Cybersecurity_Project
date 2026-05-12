@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import threading
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.utils import dump_json, utc_now_text
@@ -15,6 +16,9 @@ class IncidentLogger:
         self.database_path = database_path
         self.schema_path = schema_path
         self._lock = threading.Lock()
+        self._stats_cache = None
+        self._stats_cached_at = None
+        self._stats_ttl = timedelta(seconds=4)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self.initialize_database()
 
@@ -73,6 +77,7 @@ class IncidentLogger:
                 ),
             )
             connection.commit()
+            self._invalidate_stats_cache()
             return int(cursor.lastrowid)
 
     def create_incident(self, incident: dict) -> int:
@@ -109,6 +114,7 @@ class IncidentLogger:
                 ),
             )
             connection.commit()
+            self._invalidate_stats_cache()
             return int(cursor.lastrowid)
 
     def update_incident(self, incident_id: int, **fields) -> None:
@@ -125,6 +131,7 @@ class IncidentLogger:
                 values,
             )
             connection.commit()
+            self._invalidate_stats_cache()
 
     def log_recovery_action(
         self, incident_id: int | None, action: str, status: str, details: str
@@ -167,7 +174,16 @@ class IncidentLogger:
                 (limit,),
             ).fetchall()
 
+    def _invalidate_stats_cache(self) -> None:
+        self._stats_cache = None
+        self._stats_cached_at = None
+
     def stats(self) -> dict:
+        now = datetime.utcnow()
+        if self._stats_cache is not None and self._stats_cached_at is not None:
+            if now - self._stats_cached_at < self._stats_ttl:
+                return self._stats_cache
+
         with self._connect() as connection:
             total_events = connection.execute("SELECT COUNT(*) FROM events").fetchone()[0]
             suspicious_events = connection.execute(
@@ -187,7 +203,7 @@ class IncidentLogger:
                 "SELECT event_type, COUNT(*) AS count FROM events GROUP BY event_type"
             ).fetchall()
 
-        return {
+        self._stats_cache = {
             "total_events": total_events,
             "suspicious_events": suspicious_events,
             "total_incidents": total_incidents,
@@ -195,6 +211,8 @@ class IncidentLogger:
             "last_alert": last_alert,
             "event_type_counts": {row["event_type"]: row["count"] for row in event_type_rows},
         }
+        self._stats_cached_at = now
+        return self._stats_cache
 
     def clear_all(self) -> None:
         with self._lock, self._connect() as connection:
@@ -202,3 +220,4 @@ class IncidentLogger:
             connection.execute("DELETE FROM incidents")
             connection.execute("DELETE FROM recovery_log")
             connection.commit()
+            self._invalidate_stats_cache()
