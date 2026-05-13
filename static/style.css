@@ -354,6 +354,46 @@ form {
     cursor: default;
 }
 
+/* ── Recovery toast notification ── */
+.recovery-toast {
+    margin-bottom: 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(86, 239, 197, 0.35);
+    background: rgba(86, 239, 197, 0.1);
+    animation: fadeUp 0.4s ease both;
+}
+
+.recovery-toast.hidden { display: none; }
+
+.recovery-toast-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+}
+
+.recovery-toast-icon {
+    font-size: 1.2rem;
+    color: var(--mint);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.recovery-toast-inner strong { color: var(--mint); display: block; margin-bottom: 4px; }
+.recovery-toast-inner p { color: var(--muted); margin: 0; font-size: 0.9rem; }
+
+.recovery-toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+.recovery-toast-close:hover { color: var(--text); }
+
 /* ── Page load progress bar ── */
 #progress-bar {
     position: fixed;

@@ -15,6 +15,7 @@ class SafeRansomwareSimulator:
         self.process_tracker = process_tracker
         self.active = False
         self.stop_requested = False
+        self._stop_event = threading.Event()
         self.last_message = "Idle"
         self.last_run = None
         self.protected_folder.mkdir(parents=True, exist_ok=True)
@@ -47,6 +48,7 @@ class SafeRansomwareSimulator:
             return {"started": False, "message": "Simulator is already running."}
 
         self.stop_requested = False
+        self._stop_event.clear()
         worker = threading.Thread(target=self._run, args=(scenario,), daemon=True)
         worker.start()
         return {"started": True, "message": f"Started simulator scenario: {scenario}"}
@@ -76,6 +78,13 @@ class SafeRansomwareSimulator:
 
     def request_stop(self) -> None:
         self.stop_requested = True
+        self._stop_event.set()  # wake the simulator instantly from any sleep
+
+    def wait_until_stopped(self, timeout: float = 3.0) -> None:
+        """Block until the simulator finishes its current file operation."""
+        deadline = time.time() + timeout
+        while self.active and time.time() < deadline:
+            time.sleep(0.05)
 
     def _should_stop(self) -> bool:
         return self.stop_requested
@@ -107,7 +116,7 @@ class SafeRansomwareSimulator:
         raise PermissionError(f"Unable to rename demo file: {source_path}")
 
     def _rename_storm(self) -> None:
-        for file_path in self._target_files()[:12]:
+        for file_path in self._target_files()[:8]:
             if self._should_stop():
                 break
             locked_path = ensure_within(
@@ -116,7 +125,7 @@ class SafeRansomwareSimulator:
             )
             if file_path.exists():
                 self._rename_retry(file_path, locked_path)
-                time.sleep(0.15)
+                self._stop_event.wait(0.15)
 
     def _entropy_burst(self) -> None:
         for file_path in self._target_files()[:12]:
@@ -124,7 +133,7 @@ class SafeRansomwareSimulator:
                 break
             random_text = os.urandom(2048).hex()
             self._write_retry(file_path, random_text)
-            time.sleep(0.1)
+            self._stop_event.wait(0.1)
 
     def _mixed_attack(self) -> None:
         for index, file_path in enumerate(self._target_files()[:14]):
@@ -132,7 +141,7 @@ class SafeRansomwareSimulator:
                 break
             safe_path = ensure_within(self.protected_folder, file_path)
             self._write_retry(safe_path, os.urandom(1536).hex())
-            time.sleep(0.16)
+            self._stop_event.wait(0.16)
             if index % 2 == 0:
                 renamed = ensure_within(
                     self.protected_folder,

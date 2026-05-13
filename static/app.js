@@ -58,6 +58,48 @@ document.querySelectorAll(".nav a").forEach(link => {
 
 const METRIC_IDS = ["metric-events", "metric-suspicious", "metric-risk", "status-label", "status-detail", "monitor-state"];
 
+const TOAST_SESSION_KEY = "re_dismissed_recovery";
+
+function dismissToast() {
+    const toast = document.getElementById("recovery-toast");
+    if (toast) toast.classList.add("hidden");
+}
+
+function showRecoveryToast(summary) {
+    const toast  = document.getElementById("recovery-toast");
+    const detail = document.getElementById("recovery-toast-detail");
+    if (!toast || !summary.last_recovery) return;
+
+    const key = summary.last_recovery.evidence_path;
+    // Don't show if user already dismissed this recovery event
+    if (sessionStorage.getItem(TOAST_SESSION_KEY) === key) return;
+    // Don't show if already visible for same event
+    if (toast.dataset.recoveryKey === key) return;
+
+    toast.dataset.recoveryKey = key;
+    const count    = summary.last_recovery.restore_result?.restored_count ?? "?";
+    const score    = summary.last_recovery.triggered_score ?? "?";
+    const severity = summary.last_recovery.triggered_severity ?? "HIGH";
+    if (detail) detail.textContent = `Triggered by ${severity} risk score (${score}/100). ${count} file(s) restored from clean backup.`;
+    toast.classList.remove("hidden");
+
+    // Auto-dismiss after 5s and remember it was dismissed
+    const timer = setTimeout(() => {
+        sessionStorage.setItem(TOAST_SESSION_KEY, key);
+        dismissToast();
+    }, 5000);
+
+    // X button also saves to sessionStorage so it won't reappear on other pages
+    const closeBtn = toast.querySelector(".recovery-toast-close");
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            clearTimeout(timer);
+            sessionStorage.setItem(TOAST_SESSION_KEY, key);
+            dismissToast();
+        };
+    }
+}
+
 async function refreshSummary() {
     // Pulse metrics while fetching
     METRIC_IDS.forEach(id => {
@@ -88,6 +130,8 @@ async function refreshSummary() {
             el.classList.remove("refreshing");
         }
     });
+
+    showRecoveryToast(summary);
 }
 
 setInterval(() => { refreshSummary().catch(() => {}); }, 4000);

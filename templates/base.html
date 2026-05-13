@@ -56,6 +56,17 @@
                 {% endif %}
             {% endwith %}
 
+            <div id="recovery-toast" class="recovery-toast hidden">
+                <div class="recovery-toast-inner">
+                    <span class="recovery-toast-icon">&#10003;</span>
+                    <div>
+                        <strong>Automatic Recovery Completed</strong>
+                        <p id="recovery-toast-detail">Files restored from clean backup. Evidence preserved.</p>
+                    </div>
+                    <button class="recovery-toast-close">&times;</button>
+                </div>
+            </div>
+
             <main class="content">
                 {% block content %}{% endblock %}
             </main>

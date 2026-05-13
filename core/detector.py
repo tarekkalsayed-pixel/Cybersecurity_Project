@@ -25,7 +25,8 @@ class DetectionEngine:
         # Lock is needed because the file monitor fires events from a background thread.
         self._lock = threading.Lock()
         self.recent_events = deque(maxlen=MAX_RECENT_EVENTS)
-        self.last_incident_at = None
+        self._last_high_incident_at = None
+        self._last_medium_incident_at = None
         self.last_assessment = {
             "score": 0,
             "severity": "LOW",
@@ -135,21 +136,25 @@ class DetectionEngine:
 
     def _cooldown_allows_incident(self, severity: str) -> bool:
         """
-        Returns True only when severity is HIGH and enough time has passed
-        since the last incident. This prevents repeated alerts during one attack.
+        Returns True when severity is HIGH or MEDIUM and enough time has passed
+        since the last incident of that severity. HIGH and MEDIUM track separately
+        so a MEDIUM incident never blocks a HIGH one from triggering.
         """
-        if severity != "HIGH":
+        if severity not in ("HIGH", "MEDIUM"):
             return False
 
         now = datetime.now(timezone.utc)
 
-        if self.last_incident_at is None:
-            self.last_incident_at = now
-            return True
+        if severity == "HIGH":
+            last = self._last_high_incident_at
+        else:
+            last = self._last_medium_incident_at
 
-        seconds_since_last_incident = (now - self.last_incident_at).total_seconds()
-        if seconds_since_last_incident >= INCIDENT_COOLDOWN_SECONDS:
-            self.last_incident_at = now
+        if last is None or (now - last).total_seconds() >= INCIDENT_COOLDOWN_SECONDS:
+            if severity == "HIGH":
+                self._last_high_incident_at = now
+            else:
+                self._last_medium_incident_at = now
             return True
 
         return False

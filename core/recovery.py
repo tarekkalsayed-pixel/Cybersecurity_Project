@@ -38,7 +38,7 @@ class RecoveryManager:
         )
         return target_dir
 
-    def execute_recovery(self, incident_id: int, affected_files: list[str]) -> dict:
+    def execute_recovery(self, incident_id: int, affected_files: list[str], triggered_score: int = 0, triggered_severity: str = "HIGH") -> dict:
         evidence_dir = self.preserve_evidence(incident_id, affected_files)
         restore_result = self.backup_manager.restore_all()
         self.logger.log_recovery_action(
@@ -48,7 +48,9 @@ class RecoveryManager:
             f"Restored {restore_result['restored_count']} file(s) from clean backup.",
         )
         return {
-            "evidence_path": str(evidence_dir),
-            "restore_result": restore_result,
-            "recovery_status": "Recovered from clean backup",
+            "evidence_path":      str(evidence_dir),
+            "restore_result":     restore_result,
+            "recovery_status":    "Recovered from clean backup",
+            "triggered_score":    triggered_score,
+            "triggered_severity": triggered_severity,
         }

@@ -1,5 +1,6 @@
 import json
 import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from config import (
@@ -46,6 +47,7 @@ class RansomEyeLab:
         self.status_detail = "Ready to monitor the protected folder."
         self.last_recovery = None
         self._backup_manifest_count = 0
+        self._grace_until = None  # after recovery, ignore scoring until this time
 
     def initialize(self) -> None:
         self.simulator.seed_demo_files()
@@ -83,10 +85,21 @@ class RansomEyeLab:
             incident_id  = None
             action_taken = "Logged"
 
+            # During the post-recovery grace period, flush residual restore events
+            # so they cannot accumulate into a false MEDIUM/HIGH score.
+            in_grace = self._grace_until and datetime.now(timezone.utc) < self._grace_until
+            if in_grace:
+                self.detector.recent_events.clear()
+                self._save_event(event, assessment, None, "Logged (post-recovery grace)")
+                return
+
             self._update_status(assessment)
 
             if assessment["trigger_incident"]:
-                incident_id, action_taken = self._respond_to_incident(assessment, event)
+                if assessment["severity"] == "HIGH":
+                    incident_id, action_taken = self._respond_to_incident(assessment, event)
+                elif assessment["severity"] == "MEDIUM":
+                    incident_id, action_taken = self._create_medium_incident(assessment)
 
             self._save_event(event, assessment, incident_id, action_taken)
 
@@ -106,9 +119,25 @@ class RansomEyeLab:
                 self.status        = "ALERT"
                 self.status_detail = "Medium-confidence suspicious behavior detected."
             else:
-                if self.status != "RECOVERY":
+                if self.status not in ("ALERT", "RECOVERY"):
                     self.status        = "WATCHING"
                     self.status_detail = "Monitoring normal file activity."
+
+    def _create_medium_incident(self, assessment: dict) -> tuple[int, str]:
+        """Log a MEDIUM severity incident for the record — no recovery, no file changes."""
+        action_taken = "Suspicious activity logged. No automatic recovery (below HIGH threshold)."
+        incident_id = self.logger.create_incident({
+            "created_at":     utc_now_text(),
+            "severity":       "MEDIUM",
+            "risk_score":     assessment["score"],
+            "title":          "Medium-confidence suspicious activity detected",
+            "reasons":        assessment["reasons"],
+            "affected_files": assessment["recent_files"],
+            "status":         "OPEN",
+            "action_taken":   action_taken,
+            "report":         {"summary": assessment["summary"]},
+        })
+        return incident_id, action_taken
 
     def _respond_to_incident(self, assessment: dict, event: dict) -> tuple[int, str]:
         """
@@ -135,15 +164,41 @@ class RansomEyeLab:
             },
         })
 
-        # Step 2: signal the simulator to stop touching files
+        # Step 2: stop the simulator, wait for it to finish, then restore.
         with self._lock:
             self.status = "RECOVERY"
         self.simulator.request_stop()
+        self.simulator.wait_until_stopped()
 
-        # Steps 3 & 4: preserve evidence then restore clean files
+        # Steps 3 & 4: preserve evidence then restore clean files.
+        # Detector is reset INSIDE the suppression window so that restore file
+        # events and any leaked watchdog notifications never get scored.
         self.monitor.suspend_callbacks()
         try:
-            recovery = self.recovery_manager.execute_recovery(incident_id, assessment["recent_files"])
+            recovery = self.recovery_manager.execute_recovery(
+                incident_id,
+                assessment["recent_files"],
+                triggered_score=assessment["score"],
+                triggered_severity=assessment["severity"],
+            )
+            # Reset detector while still suppressed — no events can arrive here.
+            with self._lock:
+                self.last_recovery = recovery
+                self.detector.recent_events.clear()
+                self.detector._last_high_incident_at = None
+                self.detector._last_medium_incident_at = None
+                self.detector.last_assessment = {
+                    "score":    0,
+                    "severity": "LOW",
+                    "reasons":  ["High-risk activity was contained and files were restored from backup."],
+                    "recent_files": [],
+                }
+                # Clear process attribution so restore events are not scored as simulator activity.
+                self.process_tracker._recent_context.clear()
+                # Grace period: discard watchdog-buffered restore events for 10 seconds.
+                self._grace_until  = datetime.now(timezone.utc) + timedelta(seconds=10)
+                self.status        = "WATCHING"
+                self.status_detail = "Recovered from the latest high-risk incident."
         finally:
             self.monitor.resume_callbacks()
 
@@ -156,19 +211,6 @@ class RansomEyeLab:
             evidence_path=recovery["evidence_path"],
             recovery_status=recovery["recovery_status"],
         )
-
-        # Step 6: reset the detector and return to normal watching
-        with self._lock:
-            self.last_recovery = recovery
-            self.detector.recent_events.clear()
-            self.detector.last_assessment = {
-                "score":    0,
-                "severity": "LOW",
-                "reasons":  ["High-risk activity was contained and files were restored from backup."],
-                "recent_files": [],
-            }
-            self.status        = "WATCHING"
-            self.status_detail = "Recovered from the latest high-risk incident."
 
         return incident_id, action_taken
 

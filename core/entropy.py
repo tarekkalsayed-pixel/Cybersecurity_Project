@@ -39,7 +39,10 @@ def file_profile(path: Path) -> dict:
             "sha256": None,
         }
 
-    data = path.read_bytes()
+    try:
+        data = path.read_bytes()
+    except (PermissionError, OSError):
+        return {"exists": True, "size": 0, "entropy": None, "sha256": None}
     return {
         "exists": True,
         "size": len(data),
