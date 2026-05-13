@@ -3,7 +3,6 @@
 Real-time ransomware behavior detection, explainable alerting, and automatic file recovery, built for cybersecurity education.
 
 ![RansomEye Dashboard](docs/screenshot.png)
-*Replace this placeholder with a screenshot of the Overview page*
 
 ---
 
