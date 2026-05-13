@@ -22,11 +22,9 @@ def index():
 
 @app.route("/monitor")
 def monitor():
-    return render_template(
-        "monitor.html",
-        summary=lab.dashboard_summary(),
-        recent_events=lab.recent_events(20),
-    )
+    summary = lab.dashboard_summary()
+    summary["process_snapshot"] = lab.process_tracker.process_snapshot()
+    return render_template("monitor.html", summary=summary)
 
 
 @app.route("/events")

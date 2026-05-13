@@ -218,7 +218,7 @@ class RansomEyeLab:
             "simulator_active":     self.simulator.active,
             "simulator_last_message": self.simulator.last_message,
             "last_recovery":        last_recovery,
-            "process_snapshot":     self.process_tracker.process_snapshot(),
+            "process_snapshot":     [],
             "backup_manifest_count": self._backup_manifest_count,
         }
 

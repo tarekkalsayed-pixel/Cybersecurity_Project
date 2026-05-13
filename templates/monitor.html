@@ -80,35 +80,4 @@
         </table>
     </article>
 </section>
-
-<section class="card">
-    <span class="eyebrow">Recent Telemetry</span>
-    <h2>Latest file events</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>File</th>
-                <th>Process</th>
-                <th>Risk</th>
-                <th>Reason</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in recent_events %}
-                <tr>
-                    <td>{{ event.timestamp }}</td>
-                    <td>{{ event.event_type }}</td>
-                    <td>{{ event.file_path }}</td>
-                    <td>{{ event.process_name or "Unknown" }}</td>
-                    <td><span class="badge badge-{{ event.severity|lower }}">{{ event.severity }}</span></td>
-                    <td>{{ event.alert_reason or "-" }}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="6">No file events logged yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
 {% endblock %}

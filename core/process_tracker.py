@@ -7,6 +7,8 @@ from typing import Optional
 
 import psutil
 
+_SNAPSHOT_REFRESH_SECONDS = 30
+
 
 class ProcessTracker:
     """
@@ -22,8 +24,11 @@ class ProcessTracker:
         self._recent_context = deque(maxlen=128)
         self._lock = threading.Lock()
         self._snapshot_cache: Optional[list] = None
-        self._snapshot_cached_at: Optional[datetime] = None
-        self._snapshot_ttl = timedelta(seconds=5)
+        self._snapshot_ttl = timedelta(seconds=_SNAPSHOT_REFRESH_SECONDS)
+        # First scan runs now so the cache is populated before any page loads.
+        self._snapshot_cache = self._build_snapshot()
+        # Background thread keeps it fresh every 30 seconds after that.
+        self._start_background_refresh()
 
     def register_context(self, process_name: str, pid: int, description: str) -> None:
         with self._lock:
@@ -56,31 +61,42 @@ class ProcessTracker:
                     }
         return None
 
-    def process_snapshot(self, limit: int = 8) -> list[dict]:
-        # Iterating all OS processes is expensive on Windows, so we cache the
-        # result for 5 seconds instead of recomputing on every request.
-        now = datetime.utcnow()
-        if self._snapshot_cache is not None and self._snapshot_cached_at is not None:
-            if now - self._snapshot_cached_at < self._snapshot_ttl:
-                return self._snapshot_cache
-
+    def _build_snapshot(self, limit: int = 8) -> list[dict]:
+        """Scan only recently active processes (cpu_percent > 0)."""
         rows = []
         for process in psutil.process_iter(["pid", "name", "cpu_percent", "memory_info"]):
             try:
                 info = process.info
+                cpu = info["cpu_percent"] or 0
+                if cpu == 0:
+                    continue
                 memory = info["memory_info"].rss / (1024 * 1024) if info["memory_info"] else 0
-                rows.append(
-                    {
-                        "pid": info["pid"],
-                        "name": info["name"] or "unknown",
-                        "cpu": info["cpu_percent"] or 0,
-                        "memory_mb": round(memory, 1),
-                    }
-                )
+                rows.append({
+                    "pid":       info["pid"],
+                    "name":      info["name"] or "unknown",
+                    "cpu":       cpu,
+                    "memory_mb": round(memory, 1),
+                })
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
-
         rows.sort(key=lambda item: (item["cpu"], item["memory_mb"]), reverse=True)
-        self._snapshot_cache = rows[:limit]
-        self._snapshot_cached_at = now
-        return self._snapshot_cache
+        return rows[:limit]
+
+    def _refresh(self) -> None:
+        try:
+            fresh = self._build_snapshot()
+            with self._lock:
+                self._snapshot_cache = fresh
+        except Exception:
+            pass
+
+    def _start_background_refresh(self) -> None:
+        def loop():
+            while True:
+                self._refresh()
+                threading.Event().wait(_SNAPSHOT_REFRESH_SECONDS)
+        threading.Thread(target=loop, daemon=True).start()
+
+    def process_snapshot(self, limit: int = 8) -> list[dict]:
+        with self._lock:
+            return self._snapshot_cache or []
