@@ -1,176 +1,168 @@
+<div align="center">
+
 # RansomEye
 
-Real-time ransomware behavior detection, explainable alerting, and automatic file recovery, built for cybersecurity education.
+### Explainable ransomware-behavior detection, incident evidence, and automatic file recovery.
+
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-Web%20Dashboard-000000?logo=flask&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Forensics-003B57?logo=sqlite&logoColor=white)
+![Security](https://img.shields.io/badge/Focus-Defensive%20Security-2ea44f)
+
+**Behavioral Detection · Entropy Analysis · Risk Scoring · Forensic Logging · Automated Recovery**
+
+</div>
 
 ![RansomEye Dashboard](docs/screenshot.png)
 
 ---
 
-## What Is It?
+## Why RansomEye?
 
-RansomEye watches a protected folder for ransomware-like behavior: bulk file modifications, rename storms, suspicious extension changes, entropy spikes, and delete-recreate patterns. The moment activity crosses a high-risk threshold, it automatically preserves forensic evidence and restores clean files from backup, all visible in a live web dashboard.
+RansomEye is a defensive cybersecurity project that watches a controlled folder for ransomware-like behavior rather than relying on a single filename or signature. It combines multiple behavioral signals into an explainable risk score and demonstrates an end-to-end defensive workflow: **observe → score → alert → preserve evidence → recover**.
 
-This is a **defensive, educational project**. It contains no real ransomware, no destructive code, and no persistence or privilege escalation. The simulator only operates inside one controlled demo folder.
+The project contains **no real ransomware, destructive payload, persistence, or privilege-escalation code**. Its simulator is intentionally restricted to a controlled demo folder.
 
----
+## Detection Pipeline
 
-## Dashboard Pages
+```mermaid
+flowchart LR
+    F[File-system events] --> M[ProtectedFolderMonitor]
+    P[Process snapshot] --> M
+    M --> D[DetectionEngine]
+    D --> S[7-signal risk scorer]
+    S --> L{Risk level}
+    L -->|LOW| E[Log event]
+    L -->|MEDIUM| I[Create incident + alert]
+    L -->|HIGH| R[Preserve evidence + restore backup]
+    R --> G[Grace period + detector reset]
+```
 
-| Page | What you see |
+## Dashboard
+
+| Page | Purpose |
 |---|---|
-| Overview | Live risk score, status banner, recent incident summary |
-| Live Monitor | Real-time event feed, process snapshot, current risk explanation |
-| Events | Full file event log with entropy and severity columns |
-| Incidents | All detected incidents with evidence paths and recovery status |
-| Backups and Recovery | Backup manifest, recovery timeline, manual restore |
-| Simulator | Launch rename storm, entropy burst, or mixed attack |
-| Settings | Reseed demo files, clear logs |
+| **Overview** | Live risk score, status banner, recent incident summary |
+| **Live Monitor** | Real-time event feed, process snapshot, current risk explanation |
+| **Events** | Full file-event log with entropy and severity |
+| **Incidents** | Detected incidents, evidence paths, and recovery status |
+| **Backups & Recovery** | Backup manifest, recovery timeline, manual restore |
+| **Simulator** | Safe rename-storm, entropy-burst, and mixed-attack scenarios |
+| **Settings** | Reseed demo files and clear logs |
 
----
+## Core Engineering Features
 
-## Core Features
-
-- **Real-time file monitoring** via `watchdog` -- events fire within milliseconds of any file change
-- **7-signal behavioral scoring** -- each suspicious pattern adds weighted points to a 0-100 risk score
-- **Explainable alerts** -- every alert shows exactly which signals triggered it in plain English
-- **Two-tier incident response** -- MEDIUM saves a logged incident; HIGH triggers full automatic recovery
-- **Instant simulator stop** -- recovery halts the simulator immediately using `threading.Event`, not a sleep loop
-- **Post-recovery grace period** -- a 10-second window flushes OS-buffered watchdog events so restore activity never creates false incidents
-- **Entropy and SHA-256 file profiling** -- detects encrypted content by measuring Shannon entropy change
-- **SQLite forensic log** -- every event, incident, and recovery action is stored and queryable
-- **Global recovery toast** -- a notification appears across all dashboard pages when auto-recovery fires
-- **Process snapshot** -- background-refreshed process list shows which programs are most active
-
----
+- **Real-time file monitoring** with `watchdog`
+- **7-signal behavioral scoring** mapped to a 0–100 risk score
+- **Explainable alerts** that identify which signals caused escalation
+- **Two-tier incident response** where MEDIUM records an incident and HIGH triggers recovery
+- **Instant simulator stop** using `threading.Event`
+- **Post-recovery grace period** to prevent restore operations from creating false incidents
+- **Entropy + SHA-256 profiling** for suspicious content-change analysis
+- **SQLite forensic logging** for events, incidents, and recovery actions
+- **Process snapshots** for best-effort activity correlation
+- **Automatic evidence preservation and clean-file restoration**
 
 ## Detection Logic
 
-Every file event is evaluated against a **15-second rolling window**. Seven signals are counted and converted to a weighted risk score:
+Every event is evaluated inside a **15-second rolling window**. Seven signals contribute to the final score:
 
 | Signal | What it detects |
 |---|---|
 | Mass modifications | Many files rewritten in a short burst |
-| Many unique files touched | Breadth of the attack across different files |
-| Rename storm | Files renamed to suspicious extensions like `.locked` |
-| Suspicious extensions | Any path matching `.locked`, `.enc`, `.cry`, `.crypted`, etc. |
-| Delete and recreate | File deleted then recreated (the encrypt-in-place pattern) |
-| Entropy spike | File content entropy jumped sharply toward 8.0 (maximum randomness) |
-| Dominant process | One process linked to the majority of rapid file events |
+| Many unique files touched | Attack breadth across files |
+| Rename storm | Rapid renames to suspicious extensions |
+| Suspicious extensions | Paths ending in patterns such as `.locked`, `.enc`, `.cry`, `.crypted` |
+| Delete and recreate | Encrypt-in-place-style delete/recreate behavior |
+| Entropy spike | Content becoming sharply more random |
+| Dominant process | One process associated with most rapid activity |
 
-**Risk levels:**
+### Risk Levels
 
+```text
+ 0 - 40  → LOW      Normal activity
+41 - 70  → MEDIUM   Suspicious — incident recorded and operator notified
+71 - 100 → HIGH     Attack-like behavior — evidence preserved and files restored
 ```
- 0 - 40  ->  LOW      Normal activity
-41 - 70  ->  MEDIUM   Suspicious -- incident logged, operator notified
-71 - 100 ->  HIGH     Attack detected -- evidence saved, files restored
-```
 
----
+## Safe Simulation Scenarios
 
-## Simulator Scenarios
-
-All scenarios run exclusively inside `protected_folder/` and can be stopped at any time.
+All scenarios operate only inside `protected_folder/`.
 
 | Scenario | Behavior | Expected severity |
 |---|---|---|
 | `rename_storm` | Renames 8 files to `.locked` | MEDIUM |
-| `entropy_burst` | Overwrites 12 files with random high-entropy content | HIGH |
-| `mixed_attack` | Combines entropy overwrite, rename, and delete/recreate on 14 files | HIGH |
+| `entropy_burst` | Overwrites 12 files with high-entropy random content | HIGH |
+| `mixed_attack` | Combines entropy overwrite, rename, and delete/recreate across 14 files | HIGH |
 
----
+## Component Map
 
-## Architecture
-
-```
-watchdog (OS events)
-     |
-     v
-ProtectedFolderMonitor   <-- ProcessTracker (background refresh)
-     |
-     v
-DetectionEngine          <-- rolling 15-second window, 7 signals
-     |
-     v
-score_behavior()         <-- weighted additive scoring -> LOW / MEDIUM / HIGH
-     |
-     v
-RansomEyeLab.handle_event()
-     +-- LOW     -> log event
-     +-- MEDIUM  -> log event + create incident (no recovery)
-     +-- HIGH    -> stop simulator -> preserve evidence -> restore backup -> reset detector
-```
-
-**Component map:**
-
-| File | Role |
+| File | Responsibility |
 |---|---|
 | `app.py` | Flask routes and API endpoints |
-| `config.py` | All thresholds, paths, and constants |
-| `core/lab.py` | Central coordinator connecting all components |
-| `core/monitor.py` | Watchdog wrapper, emits normalized file events |
-| `core/detector.py` | Rolling window analysis and cooldown management |
-| `core/scorer.py` | Converts signal counts to a weighted 0-100 score |
-| `core/entropy.py` | Shannon entropy and SHA-256 file profiling |
-| `core/process_tracker.py` | Background psutil snapshot for process correlation |
-| `core/incident_logger.py` | SQLite writes with 4-second stats cache |
-| `core/backup_manager.py` | Backup snapshot creation and full restore |
+| `config.py` | Thresholds, paths, and constants |
+| `core/lab.py` | Central coordinator |
+| `core/monitor.py` | File-system monitoring and normalized events |
+| `core/detector.py` | Rolling-window analysis and cooldown management |
+| `core/scorer.py` | Weighted 0–100 behavior scoring |
+| `core/entropy.py` | Shannon entropy and SHA-256 profiling |
+| `core/process_tracker.py` | Background process snapshots |
+| `core/incident_logger.py` | SQLite persistence and statistics cache |
+| `core/backup_manager.py` | Backup snapshots and restoration |
 | `core/recovery.py` | Evidence preservation and recovery orchestration |
-| `core/simulator.py` | Safe attack scenarios with instant-stop support |
-
----
-
-## Installation
-
-**Requirements:** Python 3.11+, Windows (tested), VS Code recommended.
-
-```powershell
-# 1. Create and activate virtual environment
-python -m venv .venv
-.\.venv\Scripts\activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Run
-python app.py
-```
-
-Open **http://127.0.0.1:5000** in your browser.
-
----
-
-## Demo Walkthrough
-
-1. Open the dashboard -- status should show **WATCHING**
-2. Go to **Settings** and click **Reseed Demo Files** to populate the protected folder
-3. Go to **Simulator** and run **Rename Storm** -- watch it reach MEDIUM on the Overview
-4. Run **Entropy Burst** or **Mixed Attack** -- watch the score climb to HIGH, auto-recovery fires, and the toast notification appears
-5. Open **Incidents** to see the logged incident with affected files and evidence path
-6. Open **Backups and Recovery** to see the recovery timeline and restored file count
-
----
+| `core/simulator.py` | Controlled attack-like scenarios |
 
 ## Security Design Decisions
 
 | Decision | Why it matters |
 |---|---|
-| `threading.Lock` on shared state | Watchdog fires events from a background thread; Flask reads state from another -- the lock prevents torn reads |
-| SQL column whitelist in `update_incident` | Blocks SQL injection by rejecting any column name not in the allowed set before it reaches the query |
-| Backup refresh blocked during ALERT/RECOVERY | Prevents accidentally overwriting the clean backup with already-compromised files |
-| Post-recovery grace period (10 s) | Flushes OS-buffered watchdog events from the restore operation so they cannot score as a new attack |
-| `threading.Event` for simulator stop | Recovery stops the simulator instantly instead of waiting for the next sleep to expire |
+| `threading.Lock` on shared state | Prevents torn reads between watchdog and Flask threads |
+| SQL column whitelist | Rejects non-approved column names before a dynamic update reaches SQLite |
+| Backup refresh blocked during ALERT/RECOVERY | Protects clean backups from being replaced by compromised data |
+| 10-second post-recovery grace period | Flushes buffered restore events so recovery does not trigger a new incident |
+| `threading.Event` for simulator stop | Lets recovery stop a simulation immediately |
 
----
+## Install & Run
+
+**Requirements:** Python 3.11+, Windows (tested).
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
+
+Open `http://127.0.0.1:5000`.
+
+## Demo Walkthrough
+
+1. Open the dashboard and confirm the system is **WATCHING**.
+2. Use **Settings → Reseed Demo Files**.
+3. Run **Rename Storm** and observe MEDIUM risk behavior.
+4. Run **Entropy Burst** or **Mixed Attack** and observe HIGH-risk recovery.
+5. Review the generated incident and evidence path.
+6. Open **Backups & Recovery** to inspect restoration results.
 
 ## Limitations
 
-- Process attribution is a best-effort approximation, not kernel-level per-file ownership
-- Entropy heuristics can produce false positives in environments with legitimately random data (compressed archives, encrypted volumes)
-- The backup system is a single clean snapshot, not a versioned history
-- Watchdog event granularity varies by OS and some editors trigger extra events on save
-
----
+- Process attribution is a best-effort approximation, not kernel-level per-file ownership.
+- Entropy heuristics may false-positive on legitimately random data such as encrypted or compressed files.
+- The backup layer is a single clean snapshot rather than versioned history.
+- Watchdog event granularity varies by operating system and application behavior.
 
 ## Ethical Use
 
-This project is for cybersecurity awareness, defensive research, and university demonstration only. Do not point the protected folder at any directory containing real personal or system files.
+RansomEye is intended for cybersecurity education, defensive research, and controlled university demonstrations. Do not point its protected folder at real personal or system directories.
+
+---
+
+<div align="center">
+
+### Built by Tarek Elsayed
+
+**Computer Science · Defensive Security · Software Engineering**
+
+[GitHub Profile](https://github.com/tarekkalsayed-pixel)
+
+</div>
